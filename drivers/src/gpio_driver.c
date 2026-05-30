@@ -1,4 +1,5 @@
 #include "gpio_driver.h"
+#include "stm32f407xx.h"
 
 /**
  * @fn gpio_clock_ctrl
@@ -72,7 +73,26 @@ void gpio_init(const gpio_handle_t* gpio_handle) {
         gpio_handle->gpiox->MODER &= ~(0x03 << (2 * gpio_handle->gpio_pin_config.pin_no));
         gpio_handle->gpiox->MODER |= mode_reg_val;
     } else {
+        if (gpio_handle->gpio_pin_config.mode == GPIO_MODE_IT_FT) {
+            EXTI->FTSR |= (1 << gpio_handle->gpio_pin_config.pin_no);
+            EXTI->RTSR &= ~(1 << gpio_handle->gpio_pin_config.pin_no);
+        } else if (gpio_handle->gpio_pin_config.mode == GPIO_MODE_IT_RT) {
+            EXTI->RTSR |= (1 << gpio_handle->gpio_pin_config.pin_no);
+            EXTI->FTSR &= ~(1 << gpio_handle->gpio_pin_config.pin_no);
+        } else if (gpio_handle->gpio_pin_config.mode == GPIO_MODE_IT_RFT) {
+            EXTI->FTSR |= (1 << gpio_handle->gpio_pin_config.pin_no);
+            EXTI->RTSR |= (1 << gpio_handle->gpio_pin_config.pin_no);
+        }
 
+        // GPIO port selection in SYSCFG_EXTICR
+        uint8_t syscfg_exticr_idx = gpio_handle->gpio_pin_config.pin_no / 4;
+        uint8_t syscfg_exticr_pos = gpio_handle->gpio_pin_config.pin_no % 4;
+        uint8_t port_code = GPIO_BASEADDR_TO_CODE(gpio_handle->gpiox);
+        SYSCFG_PCLK_EN();
+        SYSCFG->EXTICR[syscfg_exticr_idx] = port_code << (syscfg_exticr_pos * 4);
+
+        // Enable EXTI interrupt in IMR
+        EXTI->IMR |= (1 << gpio_handle->gpio_pin_config.pin_no);
     }
 
     // Configure speed
@@ -148,10 +168,36 @@ void gpio_toggle_output_pin(gpio_reg_def_t* gpiox, const uint8_t pin_no) {
 }
 
 // IRQ/ISR config/handling
-void gpio_irq_config(const uint8_t irq_no, const uint8_t irq_priority, const status_e status) {
 
+void gpio_irq_interrupt_config(const uint8_t irq_no, const status_e status) {
+    if (status == STATUS_ENABLE) {
+        if (irq_no <= 31) {
+            *NVIC_ISER0 |= (1 << irq_no);
+        } else if (irq_no < 64) {
+            *NVIC_ISER1 |= (1 << (irq_no % 32));
+        } else if (irq_no < 96) {
+            *NVIC_ISER2 |= (1 << (irq_no % 64));
+        }
+    } else {
+        if (irq_no <= 31) {
+            *NVIC_ICER0 |= (1 << irq_no);
+        } else if (irq_no < 64) {
+            *NVIC_ICER1 |= (1 << (irq_no % 32));
+        } else if (irq_no < 96) {
+            *NVIC_ICER2 |= (1 << (irq_no % 64));
+        }
+    }
+}
+
+void gpio_irq_priority_config(const uint8_t irq_no, const uint8_t irq_priority) {
+    uint8_t ipr_idx = irq_no / 4;
+    uint8_t ipr_pos = irq_no % 4;
+
+    *(NVIC_PR + (ipr_idx * 4)) |= (irq_priority << ((ipr_pos * 8) + (8 - NO_PRIORITY_BITS_IMPLEMENTED)));
 }
 
 void gpio_irq_handling(const uint8_t pin_no) {
-
+    if (EXTI->PR & (1 << pin_no)) {
+        EXTI->PR |= (1 << pin_no);
+    }
 }

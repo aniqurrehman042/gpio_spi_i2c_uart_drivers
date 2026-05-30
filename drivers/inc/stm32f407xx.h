@@ -1,6 +1,10 @@
 #pragma once
 
-#include <stdint.h>
+#include "arm_cortex_m4.h"
+
+// Generic macros
+
+#define NO_PRIORITY_BITS_IMPLEMENTED 4
 
 // Memories
 
@@ -105,6 +109,25 @@ typedef struct {
     volatile uint32_t DCKCFGR2;
 } rcc_reg_def_t;
 
+typedef struct {
+    volatile uint32_t IMR;
+    volatile uint32_t EMR;
+    volatile uint32_t RTSR;
+    volatile uint32_t FTSR;
+    volatile uint32_t SWIER;
+    volatile uint32_t PR;
+} exti_reg_def_t;
+
+typedef struct {
+    volatile uint32_t MEMRMP;
+    volatile uint32_t PMC;
+    volatile uint32_t EXTICR[4];
+    volatile uint32_t RESERVED1[2];
+    volatile uint32_t CMPCR;
+    volatile uint32_t RESERVED2[2];
+    volatile uint32_t CFGR;
+} syscfg_reg_def_t;
+
 // Peripheral definitions
 
 #define GPIOA ((gpio_reg_def_t*)GPIOA_BASEADDR)
@@ -118,6 +141,10 @@ typedef struct {
 #define GPIOI ((gpio_reg_def_t*)GPIOI_BASEADDR)
 
 #define RCC ((rcc_reg_def_t*)RCC_BASEADDR)
+
+#define EXTI ((exti_reg_def_t*)EXTI_BASEADDR)
+
+#define SYSCFG ((syscfg_reg_def_t*)SYSCFG_BASEADDR)
 
 // GPIO clock enable
 
@@ -242,6 +269,16 @@ typedef struct {
         RCC->AHB1RSTR &= ~(1 << 8); \
     } while(0)
 
+#define GPIO_BASEADDR_TO_CODE(x) (x == GPIOA) ? 0 : \
+    (x == GPIOB) ? 1 : \
+    (x == GPIOC) ? 2 : \
+    (x == GPIOD) ? 3 : \
+    (x == GPIOE) ? 4 : \
+    (x == GPIOF) ? 5 : \
+    (x == GPIOG) ? 6 : \
+    (x == GPIOH) ? 7 : \
+    (x == GPIOI) ? 8 : 0
+
 // Generic enums
 
 typedef enum {
@@ -253,3 +290,13 @@ typedef enum {
     PIN_RESET,
     PIN_SET
 } pin_status_e;
+
+typedef enum {
+    IRQ_NO_EXTI0 = 6,
+    IRQ_NO_EXTI1 = 7,
+    IRQ_NO_EXTI2 = 8,
+    IRQ_NO_EXTI3 = 9,
+    IRQ_NO_EXTI4 = 10,
+    IRQ_NO_EXTI9_5 = 23,
+    IRQ_NO_EXTI15_10 = 40
+} irq_no_e;
