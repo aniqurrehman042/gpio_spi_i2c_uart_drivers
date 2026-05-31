@@ -81,6 +81,6 @@ void gpio_write_output_port(gpio_reg_def_t* gpiox, const uint16_t value);
 void gpio_toggle_output_pin(gpio_reg_def_t* gpiox, const uint8_t pin_no);
 
 // IRQ/ISR config/handling
-void gpio_irq_interrupt_config(const uint8_t irq_no, const status_e status);
-void gpio_irq_priority_config(const uint8_t irq_no, const uint8_t irq_priority);
-void gpio_irq_handling(const uint8_t pin_no);
+void gpio_irq_interrupt_config(const irq_no_e irq_no, const status_e status);
+void gpio_irq_priority_config(const irq_no_e irq_no, const nvic_irq_priority_e irq_priority);
+void gpio_irq_handling(const gpio_pin_no_e pin_no);

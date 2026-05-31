@@ -169,7 +169,7 @@ void gpio_toggle_output_pin(gpio_reg_def_t* gpiox, const uint8_t pin_no) {
 
 // IRQ/ISR config/handling
 
-void gpio_irq_interrupt_config(const uint8_t irq_no, const status_e status) {
+void gpio_irq_interrupt_config(const irq_no_e irq_no, const status_e status) {
     if (status == STATUS_ENABLE) {
         if (irq_no <= 31) {
             *NVIC_ISER0 |= (1 << irq_no);
@@ -189,14 +189,14 @@ void gpio_irq_interrupt_config(const uint8_t irq_no, const status_e status) {
     }
 }
 
-void gpio_irq_priority_config(const uint8_t irq_no, const uint8_t irq_priority) {
+void gpio_irq_priority_config(const irq_no_e irq_no, const nvic_irq_priority_e irq_priority) {
     uint8_t ipr_idx = irq_no / 4;
     uint8_t ipr_pos = irq_no % 4;
 
-    *(NVIC_PR + (ipr_idx * 4)) |= (irq_priority << ((ipr_pos * 8) + (8 - NO_PRIORITY_BITS_IMPLEMENTED)));
+    *(NVIC_PR + ipr_idx) |= (irq_priority << ((ipr_pos * 8) + (8 - NO_PRIORITY_BITS_IMPLEMENTED)));
 }
 
-void gpio_irq_handling(const uint8_t pin_no) {
+void gpio_irq_handling(const gpio_pin_no_e pin_no) {
     if (EXTI->PR & (1 << pin_no)) {
         EXTI->PR |= (1 << pin_no);
     }
