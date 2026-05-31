@@ -21,13 +21,15 @@
 
 void example_gpio_led_toggle();
 void example_gpio_led_btn();
+void example_gpio_led_btn_interrupt();
 
 int main(void)
 {
     // example_gpio_led_toggle();
-    example_gpio_led_btn();
+    // example_gpio_led_btn();
+    example_gpio_led_btn_interrupt();
 
-	for(;;);
+	for (;;);
     return 0;
 }
 
@@ -35,8 +37,18 @@ void delay() {
     for (int i = 0; i < 250000; i++);
 }
 
+// IRQ handlers
+
+void EXTI0_IRQHandler(void) {
+    gpio_toggle_output_pin(GPIOD, GPIO_PIN_NO_12);
+    delay();
+    gpio_irq_handling(GPIO_PIN_NO_0);
+}
+
+// Examples
+
 void example_gpio_led_toggle_1() {
-    gpio_handle_t gpio_handle;
+    gpio_handle_t gpio_handle = {0};
     gpio_handle.gpiox = GPIOD;
     gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
     gpio_handle.gpio_pin_config.mode = GPIO_MODE_OUT;
@@ -54,7 +66,7 @@ void example_gpio_led_toggle_1() {
 }
 
 void example_gpio_led_btn() {
-    gpio_handle_t gpio_led_handle;
+    gpio_handle_t gpio_led_handle = {0};
     gpio_led_handle.gpiox = GPIOD;
     gpio_led_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
     gpio_led_handle.gpio_pin_config.mode = GPIO_MODE_OUT;
@@ -62,8 +74,8 @@ void example_gpio_led_btn() {
     gpio_led_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_PP;
     gpio_led_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
 
-    gpio_handle_t gpio_btn_handle;
-    gpio_btn_handle.gpiox = GPIOD;
+    gpio_handle_t gpio_btn_handle = {0};
+    gpio_btn_handle.gpiox = GPIOA;
     gpio_btn_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_0;
     gpio_btn_handle.gpio_pin_config.mode = GPIO_MODE_IN;
     gpio_btn_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
@@ -83,4 +95,32 @@ void example_gpio_led_btn() {
         }
         delay();
     }
+}
+
+void example_gpio_led_btn_interrupt() {
+    gpio_handle_t gpio_led_handle = {0};
+    gpio_led_handle.gpiox = GPIOD;
+    gpio_led_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
+    gpio_led_handle.gpio_pin_config.mode = GPIO_MODE_OUT;
+    gpio_led_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+    gpio_led_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_PP;
+    gpio_led_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+
+    gpio_handle_t gpio_btn_handle = {0};
+    gpio_btn_handle.gpiox = GPIOA;
+    gpio_btn_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_0;
+    gpio_btn_handle.gpio_pin_config.mode = GPIO_MODE_IT_FT;
+    gpio_btn_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+    gpio_btn_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_OD;
+    gpio_btn_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+
+    gpio_clock_ctrl(GPIOD, STATUS_ENABLE);
+    gpio_clock_ctrl(GPIOA, STATUS_ENABLE);
+    gpio_init(&gpio_led_handle);
+    gpio_init(&gpio_btn_handle);
+
+    gpio_irq_priority_config(IRQ_NO_EXTI0, NVIC_IRQ_PRIORITY_0);
+    gpio_irq_interrupt_config(IRQ_NO_EXTI0, STATUS_ENABLE);
+
+    for (;;);
 }
