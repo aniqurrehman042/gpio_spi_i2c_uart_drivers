@@ -128,6 +128,18 @@ typedef struct {
     volatile uint32_t CFGR;
 } syscfg_reg_def_t;
 
+typedef struct {
+    volatile uint32_t CR1;
+    volatile uint32_t CR2;
+    volatile uint32_t SR;
+    volatile uint32_t DR;
+    volatile uint32_t CRCPR;
+    volatile uint32_t RXCRCR;
+    volatile uint32_t TXCRCR;
+    volatile uint32_t I2SCRGR;
+    volatile uint32_t I2SPR;
+} spi_reg_def_t;
+
 // Peripheral definitions
 
 #define GPIOA ((gpio_reg_def_t*)GPIOA_BASEADDR)
@@ -145,6 +157,10 @@ typedef struct {
 #define EXTI ((exti_reg_def_t*)EXTI_BASEADDR)
 
 #define SYSCFG ((syscfg_reg_def_t*)SYSCFG_BASEADDR)
+
+#define SPI1 ((spi_reg_def_t*)SPI1_BASEADDR)
+#define SPI2 ((spi_reg_def_t*)SPI2_BASEADDR)
+#define SPI3 ((spi_reg_def_t*)SPI3_BASEADDR)
 
 // GPIO clock enable
 
