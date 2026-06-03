@@ -46,6 +46,7 @@ set(sources_SRCS
 
     # Drivers
     ${CMAKE_CURRENT_SOURCE_DIR}/drivers/src/gpio_driver.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/src/spi_driver.c
 )
 
 # Include directories for all compilers

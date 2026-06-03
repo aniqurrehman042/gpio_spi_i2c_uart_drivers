@@ -295,6 +295,47 @@ typedef struct {
     (x == GPIOH) ? 7 : \
     (x == GPIOI) ? 8 : 0
 
+// Register bit position enums
+
+typedef enum {
+    SPI_CR1_CPHA,
+    SPI_CR1_CPOL,
+    SPI_CR1_MSTR,
+    SPI_CR1_BR,
+    SPI_CR1_SPE = 6,
+    SPI_CR1_LSB_FIRST,
+    SPI_CR1_SSI,
+    SPI_CR1_SSM,
+    SPI_CR1_RXONLY,
+    SPI_CR1_DFF,
+    SPI_CR1_CRCNEXT,
+    SPI_CR1_CRCEN,
+    SPI_CR1_BIDIOE,
+    SPI_CR1_BIDIMODE
+} spi_cr1_e;
+
+typedef enum {
+    SPI_CR2_RXDMAEN,
+    SPI_CR2_TXDMAEN,
+    SPI_CR2_SSOE,
+    SPI_CR2_FRF = 4,
+    SPI_CR2_ERRIE,
+    SPI_CR2_RXNEIE,
+    SPI_CR2_TXEIE
+} spi_cr2_e;
+
+typedef enum {
+    SPI_SR_RXNE,
+    SPI_SR_TXE,
+    SPI_SR_CHSIDE,
+    SPI_SR_UDR,
+    SPI_SR_CRCERR,
+    SPI_SR_MODF,
+    SPI_SR_OVR,
+    SPI_SR_BSY,
+    SPI_SR_FRE
+} spi_sr_e;
+
 // Generic enums
 
 typedef enum {
