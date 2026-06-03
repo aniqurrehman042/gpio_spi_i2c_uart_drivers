@@ -1,5 +1,4 @@
 #include "gpio_driver.h"
-#include "stm32f407xx.h"
 
 /**
  * @fn gpio_clock_ctrl
