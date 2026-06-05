@@ -18,7 +18,10 @@
 
 #include <stm32f407xx.h>
 #include <gpio_driver.h>
+#include <spi_driver.h>
 
+void example_spi_send_data_gpio_init(void);
+void example_spi_send_data_spi_init(void);
 void example_spi_send_data(void);
 
 int main(void)
@@ -37,6 +40,61 @@ void delay() {
 
 // Examples
 
+/**
+ * PB14 -> SPI2 MISO
+ * PB15 -> SPI2 MOSI
+ * PB13 -> SPI2 SCLK
+ * PB12 -> SPI2 NSS
+ * ALT mode -> 5
+ */
+void example_spi_send_data_gpio_init(void) {
+    gpio_handle_t spi_pins_gpio_handle = {0};
+    spi_pins_gpio_handle.gpiox = GPIOB;
+    spi_pins_gpio_handle.gpio_pin_config.mode = GPIO_MODE_ALFFN;
+    spi_pins_gpio_handle.gpio_pin_config.alt_fn_mode = 5;
+    spi_pins_gpio_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_PP;
+    spi_pins_gpio_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+    spi_pins_gpio_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+
+    // SCLK
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_13;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // MOSI
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_15;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // MISI
+    // spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_14;
+    // gpio_init(&spi_pins_gpio_handle);
+
+    // NSS
+    // spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
+    // gpio_init(&spi_pins_gpio_handle);
+}
+
+void example_spi_send_data_spi_init(void) {
+    spi_handle_t spi_handle = {0};
+    spi_handle.spix = SPI2;
+    spi_handle.spi_config.bus_config = SPI_BUS_CONFIG_FD;
+    spi_handle.spi_config.device_mode = SPI_DEVICE_MODE_MASTER;
+    spi_handle.spi_config.sclk_speed = SPI_SCLK_SPEED_DIV_2;
+    spi_handle.spi_config.dff = SPI_DFF_8_BITS;
+    spi_handle.spi_config.cpol = SPI_CPOL_LOW;
+    spi_handle.spi_config.cpha = SPI_CPHA_LOW;
+    spi_handle.spi_config.ssm = SPI_SSM_EN;
+
+    spi_init(&spi_handle);
+}
+
 void example_spi_send_data(void) {
-    
+    example_spi_send_data_gpio_init();
+    example_spi_send_data_spi_init();
+
+    spi_ctrl(SPI2, STATUS_ENABLE);
+
+    const char data[] = "Hello";
+    spi_send(SPI2, (const uint8_t*)data, sizeof(data));
+
+    for (;;);
 }

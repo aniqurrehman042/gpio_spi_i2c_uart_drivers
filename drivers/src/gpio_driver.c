@@ -66,6 +66,9 @@ void gpio_clock_ctrl(const gpio_reg_def_t* gpiox, const status_e status) {
 // Init/Deinit
 
 void gpio_init(const gpio_handle_t* gpio_handle) {
+    // Enable clock
+    gpio_clock_ctrl(gpio_handle->gpiox, STATUS_ENABLE);
+
     // Configure pin mode
     if (gpio_handle->gpio_pin_config.mode <= GPIO_MODE_ANALOG) {
         uint32_t mode_reg_val = gpio_handle->gpio_pin_config.mode << (2 * gpio_handle->gpio_pin_config.pin_no);

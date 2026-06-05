@@ -79,3 +79,5 @@ void spi_irq_priority_config(const irq_no_e irq_no, const nvic_irq_priority_e ir
 void spi_irq_handling(const spi_handle_t* spi_handle);
 
 // Other peripheral control APIs
+
+void spi_ctrl(spi_reg_def_t* spix, const status_e status);
