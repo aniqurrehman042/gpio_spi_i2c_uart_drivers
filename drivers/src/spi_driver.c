@@ -63,6 +63,9 @@ void spi_init(const spi_handle_t* spi_handle) {
     // Set CPHA
     spi_cr1_reg_val |= (spi_handle->spi_config.cpha << SPI_CR1_CPHA);
 
+    // Set SSM
+    spi_cr1_reg_val |= (spi_handle->spi_config.ssm << SPI_CR1_SSM);
+
     spi_handle->spix->CR1 = spi_cr1_reg_val;
 }
 
@@ -104,5 +107,21 @@ void spi_ctrl(spi_reg_def_t* spix, const status_e status) {
         spix->CR1 |= (1 << SPI_CR1_SPE);
     } else {
         spix->CR1 &= ~(1 << SPI_CR1_SPE);
+    }
+}
+
+void spi_ssi_config(spi_reg_def_t* spix, const status_e status) {
+    if (status == STATUS_ENABLE) {
+        spix->CR1 |= (1 << SPI_CR1_SSI);
+    } else {
+        spix->CR1 &= ~(1 << SPI_CR1_SSI);
+    }
+}
+
+void spi_ssoe_config(spi_reg_def_t* spix, const status_e status) {
+    if (status == STATUS_ENABLE) {
+        spix->CR2 |= (1 << SPI_CR2_SSOE);
+    } else {
+        spix->CR2 &= ~(1 << SPI_CR2_SSOE);
     }
 }

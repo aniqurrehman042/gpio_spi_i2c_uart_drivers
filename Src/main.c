@@ -24,9 +24,14 @@ void example_spi_send_data_gpio_init(void);
 void example_spi_send_data_spi_init(void);
 void example_spi_send_data(void);
 
+void example_spi_send_data_to_arduino_gpio_init(void);
+void example_spi_send_data_to_arduino_spi_init(void);
+void example_spi_send_data_to_arduino(void);
+
 int main(void)
 {
-    
+    // example_spi_send_data();
+    example_spi_send_data_to_arduino();
 
 	for (;;);
     return 0;
@@ -40,13 +45,6 @@ void delay() {
 
 // Examples
 
-/**
- * PB14 -> SPI2 MISO
- * PB15 -> SPI2 MOSI
- * PB13 -> SPI2 SCLK
- * PB12 -> SPI2 NSS
- * ALT mode -> 5
- */
 void example_spi_send_data_gpio_init(void) {
     gpio_handle_t spi_pins_gpio_handle = {0};
     spi_pins_gpio_handle.gpiox = GPIOB;
@@ -56,19 +54,19 @@ void example_spi_send_data_gpio_init(void) {
     spi_pins_gpio_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
     spi_pins_gpio_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
 
-    // SCLK
+    // SCLK -> PB13
     spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_13;
     gpio_init(&spi_pins_gpio_handle);
 
-    // MOSI
+    // MOSI -> PB15
     spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_15;
     gpio_init(&spi_pins_gpio_handle);
 
-    // MISI
+    // MISI -> PB14
     // spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_14;
     // gpio_init(&spi_pins_gpio_handle);
 
-    // NSS
+    // NSS -> PB12
     // spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
     // gpio_init(&spi_pins_gpio_handle);
 }
@@ -91,10 +89,97 @@ void example_spi_send_data(void) {
     example_spi_send_data_gpio_init();
     example_spi_send_data_spi_init();
 
+    spi_ssi_config(SPI2, STATUS_ENABLE);
     spi_ctrl(SPI2, STATUS_ENABLE);
 
     const char data[] = "Hello";
-    spi_send(SPI2, (const uint8_t*)data, sizeof(data));
+
+    for (;;) {
+        spi_send(SPI2, (const uint8_t*)data, sizeof(data));
+        delay();
+    }
+
+    for (;;);
+}
+
+void example_spi_send_data_to_arduino_gpio_init(void) {
+    gpio_handle_t spi_pins_gpio_handle = {0};
+    spi_pins_gpio_handle.gpiox = GPIOB;
+    spi_pins_gpio_handle.gpio_pin_config.mode = GPIO_MODE_ALFFN;
+    spi_pins_gpio_handle.gpio_pin_config.alt_fn_mode = 5;
+    spi_pins_gpio_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_PP;
+    spi_pins_gpio_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+    spi_pins_gpio_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+
+    // SCLK -> PB13
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_13;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // MOSI -> PB15
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_15;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // MISI -> PB14
+    // spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_14;
+    // gpio_init(&spi_pins_gpio_handle);
+
+    // NSS -> PB12
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // Button config
+    gpio_handle_t gpio_btn_handle = {0};
+    gpio_btn_handle.gpiox = GPIOA;
+    gpio_btn_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_0;
+    gpio_btn_handle.gpio_pin_config.mode = GPIO_MODE_IN;
+    gpio_btn_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+    gpio_btn_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_OD;
+    gpio_btn_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+
+    gpio_init(&gpio_btn_handle);
+}
+
+void example_spi_send_data_to_arduino_spi_init(void) {
+    spi_handle_t spi_handle = {0};
+    spi_handle.spix = SPI2;
+    spi_handle.spi_config.bus_config = SPI_BUS_CONFIG_FD;
+    spi_handle.spi_config.device_mode = SPI_DEVICE_MODE_MASTER;
+    spi_handle.spi_config.sclk_speed = SPI_SCLK_SPEED_DIV_8;
+    spi_handle.spi_config.dff = SPI_DFF_8_BITS;
+    spi_handle.spi_config.cpol = SPI_CPOL_LOW;
+    spi_handle.spi_config.cpha = SPI_CPHA_LOW;
+    spi_handle.spi_config.ssm = SPI_SSM_DI;
+
+    spi_init(&spi_handle);
+}
+
+void example_spi_send_data_to_arduino(void) {
+    example_spi_send_data_to_arduino_gpio_init();
+    example_spi_send_data_to_arduino_spi_init();
+
+    // This step is performed automatically (only if SSOE == 1) when SPE == 1
+    // gpio_write_output_pin(GPIOB, GPIO_PIN_NO_12, PIN_RESET);
+    
+    spi_ssoe_config(SPI2, STATUS_ENABLE);
+
+    const char data[] = "Hello 2236";
+    const uint8_t data_len = sizeof(data);
+
+    for (;;) {
+        while (!gpio_read_input_pin(GPIOA, GPIO_PIN_NO_0));
+        spi_ctrl(SPI2, STATUS_ENABLE);
+
+        // Send data length
+        spi_send(SPI2, &data_len, sizeof(data_len));
+
+        // Send data
+        spi_send(SPI2, (const uint8_t*)data, data_len);
+
+        // Ensure SPI communication is completed before disabling the peripheral
+        while (SPI2->SR & (1 << SPI_SR_BSY));
+        spi_ctrl(SPI2, STATUS_DISABLE);
+        delay();
+    }
 
     for (;;);
 }

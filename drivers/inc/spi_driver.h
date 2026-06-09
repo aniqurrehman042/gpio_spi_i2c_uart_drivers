@@ -81,3 +81,5 @@ void spi_irq_handling(const spi_handle_t* spi_handle);
 // Other peripheral control APIs
 
 void spi_ctrl(spi_reg_def_t* spix, const status_e status);
+void spi_ssi_config(spi_reg_def_t* spix, const status_e status);
+void spi_ssoe_config(spi_reg_def_t* spix, const status_e status);
