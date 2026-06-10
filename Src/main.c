@@ -16,6 +16,7 @@
  ******************************************************************************
  */
 
+#include <stdbool.h>
 #include <stm32f407xx.h>
 #include <gpio_driver.h>
 #include <spi_driver.h>
@@ -28,10 +29,15 @@ void example_spi_send_data_to_arduino_gpio_init(void);
 void example_spi_send_data_to_arduino_spi_init(void);
 void example_spi_send_data_to_arduino(void);
 
+void example_spi_arduino_cmd_gpio_init(void);
+void example_spi_arduino_cmd_spi_init(void);
+void example_spi_arduino_cmd(void);
+
 int main(void)
 {
     // example_spi_send_data();
-    example_spi_send_data_to_arduino();
+    // example_spi_send_data_to_arduino();
+    example_spi_arduino_cmd();
 
 	for (;;);
     return 0;
@@ -174,6 +180,135 @@ void example_spi_send_data_to_arduino(void) {
 
         // Send data
         spi_send(SPI2, (const uint8_t*)data, data_len);
+
+        // Ensure SPI communication is completed before disabling the peripheral
+        while (SPI2->SR & (1 << SPI_SR_BSY));
+        spi_ctrl(SPI2, STATUS_DISABLE);
+        delay();
+    }
+
+    for (;;);
+}
+
+void example_spi_arduino_cmd_gpio_init(void) {
+    gpio_handle_t spi_pins_gpio_handle = {0};
+    spi_pins_gpio_handle.gpiox = GPIOB;
+    spi_pins_gpio_handle.gpio_pin_config.mode = GPIO_MODE_ALFFN;
+    spi_pins_gpio_handle.gpio_pin_config.alt_fn_mode = 5;
+    spi_pins_gpio_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_PP;
+    spi_pins_gpio_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+    spi_pins_gpio_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+
+    // SCLK -> PB13
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_13;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // MOSI -> PB15
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_15;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // MISO -> PB14
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_14;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // NSS -> PB12
+    spi_pins_gpio_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_12;
+    gpio_init(&spi_pins_gpio_handle);
+
+    // Button config
+    gpio_handle_t gpio_btn_handle = {0};
+    gpio_btn_handle.gpiox = GPIOA;
+    gpio_btn_handle.gpio_pin_config.pin_no = GPIO_PIN_NO_0;
+    gpio_btn_handle.gpio_pin_config.mode = GPIO_MODE_IN;
+    gpio_btn_handle.gpio_pin_config.speed = GPIO_SPEED_FAST;
+    gpio_btn_handle.gpio_pin_config.op_type = GPIO_OP_TYPE_OD;
+    gpio_btn_handle.gpio_pin_config.pupd = GPIO_PIN_PUPD_NONE;
+
+    gpio_init(&gpio_btn_handle);
+}
+
+void example_spi_arduino_cmd_spi_init(void) {
+    spi_handle_t spi_handle = {0};
+    spi_handle.spix = SPI2;
+    spi_handle.spi_config.bus_config = SPI_BUS_CONFIG_FD;
+    spi_handle.spi_config.device_mode = SPI_DEVICE_MODE_MASTER;
+    spi_handle.spi_config.sclk_speed = SPI_SCLK_SPEED_DIV_8;
+    spi_handle.spi_config.dff = SPI_DFF_8_BITS;
+    spi_handle.spi_config.cpol = SPI_CPOL_LOW;
+    spi_handle.spi_config.cpha = SPI_CPHA_LOW;
+    spi_handle.spi_config.ssm = SPI_SSM_DI;
+
+    spi_init(&spi_handle);
+}
+
+bool example_spi_arduino_cmd_verify_response(const uint8_t ack_byte) {
+    if (ack_byte == 0xF5) {
+        // Ack
+        return true;
+    }
+    return false;
+}
+
+typedef enum {
+    ARDUINO_CMD_LED_CTRL = 0x50,
+    ARDUINO_CMD_SENSOR_READ = 0x52,
+    ARDUINO_CMD_LED_READ = 0x53,
+    ARDUINO_CMD_PRINT = 0x54,
+    ARDUINO_CMD_ID_READ = 0x55
+} arduino_cmd_e;
+
+typedef enum {
+    ARDUINO_CMD_LED_OFF,
+    ARDUINO_CMD_LED_ON
+} arduino_cmd_led_on_e;
+
+typedef enum {
+    ARDUINO_ANALOG_PIN0,
+    ARDUINO_ANALOG_PIN1,
+    ARDUINO_ANALOG_PIN2,
+    ARDUINO_ANALOG_PIN3,
+    ARDUINO_ANALOG_PIN4
+} arduino_analog_pin_e;
+
+#define ARDUINO_LED_PIN 9
+
+void example_spi_arduino_cmd(void) {
+    example_spi_send_data_to_arduino_gpio_init();
+    example_spi_send_data_to_arduino_spi_init();
+
+    // This step is performed automatically (only if SSOE == 1) when SPE == 1
+    // gpio_write_output_pin(GPIOB, GPIO_PIN_NO_12, PIN_RESET);
+    
+    spi_ssoe_config(SPI2, STATUS_ENABLE);
+
+    for (;;) {
+        while (!gpio_read_input_pin(GPIOA, GPIO_PIN_NO_0));
+        spi_ctrl(SPI2, STATUS_ENABLE);
+
+        // Send LED CTRL command
+        uint8_t cmd_code = ARDUINO_CMD_LED_CTRL;
+        spi_send(SPI2, &cmd_code, sizeof(cmd_code));
+
+        // Read dummy byte to clear RXNE
+        uint8_t dummy_byte = 0xFF;
+        spi_receive(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+        // Send dummy byte so that data from slave's SPI data register is shifted into our SPI data register
+        spi_send(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+        // Read the shifted data from the previous operation
+        uint8_t ack_byte = 0xFF;
+        spi_receive(SPI2, &ack_byte, sizeof(ack_byte));
+
+        uint8_t args[2] = {0};
+
+        // Verify if we receive ACK or NACK
+        if (example_spi_arduino_cmd_verify_response(ack_byte)) {
+            // Send cmd arguments
+            args[0] = ARDUINO_LED_PIN;
+            args[1] = ARDUINO_CMD_LED_ON;
+            spi_send(SPI2, args, sizeof(args));
+        }
 
         // Ensure SPI communication is completed before disabling the peripheral
         while (SPI2->SR & (1 << SPI_SR_BSY));
