@@ -91,7 +91,23 @@ void spi_send(spi_reg_def_t* spix, const uint8_t* tx_buffer, const uint32_t len)
     }
 }
 
-void spi_receive(const spi_reg_def_t* spix, uint8_t* tx_buffer, const uint32_t len) {}
+void spi_receive(const spi_reg_def_t* spix, uint8_t* rx_buffer, const uint32_t len) {
+    uint32_t curr_len = len;
+    while (curr_len > 0) {
+        while (!(spix->SR & (1 << SPI_SR_RXNE)));
+        if (spix->CR1 & (1 << SPI_CR1_DFF)) {
+            // 16 bit data per cycle
+            *(uint16_t*)(rx_buffer) = spix->DR;
+            rx_buffer += 2;
+            curr_len -= 2;
+        } else {
+            // 8 bit data per cycle
+            *rx_buffer = spix->DR;
+            rx_buffer++;
+            curr_len--;
+        }
+    }
+}
 
 // IRQ/ISR config/handling
 void spi_irq_interrupt_config(const irq_no_e irq_no, const status_e status) {}

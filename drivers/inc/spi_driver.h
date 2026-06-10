@@ -71,7 +71,7 @@ void spi_deinit(const spi_reg_def_t* spix);
 // Data send/receive
 
 void spi_send(spi_reg_def_t* spix, const uint8_t* tx_buffer, const uint32_t len);
-void spi_receive(const spi_reg_def_t* spix, uint8_t* tx_buffer, const uint32_t len);
+void spi_receive(const spi_reg_def_t* spix, uint8_t* rx_buffer, const uint32_t len);
 
 // IRQ/ISR config/handling
 void spi_irq_interrupt_config(const irq_no_e irq_no, const status_e status);
