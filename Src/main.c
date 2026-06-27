@@ -273,8 +273,8 @@ typedef enum {
 #define ARDUINO_LED_PIN 9
 
 void example_spi_arduino_cmd(void) {
-    example_spi_send_data_to_arduino_gpio_init();
-    example_spi_send_data_to_arduino_spi_init();
+    example_spi_arduino_cmd_gpio_init();
+    example_spi_arduino_cmd_spi_init();
 
     // This step is performed automatically (only if SSOE == 1) when SPE == 1
     // gpio_write_output_pin(GPIOB, GPIO_PIN_NO_12, PIN_RESET);
