@@ -282,7 +282,9 @@ void example_spi_arduino_cmd(void) {
     spi_ssoe_config(SPI2, STATUS_ENABLE);
 
     for (;;) {
+        // Button input
         while (!gpio_read_input_pin(GPIOA, GPIO_PIN_NO_0));
+        delay();
         spi_ctrl(SPI2, STATUS_ENABLE);
 
         // Send LED CTRL command
@@ -292,6 +294,9 @@ void example_spi_arduino_cmd(void) {
         // Read dummy byte to clear RXNE
         uint8_t dummy_byte = 0xFF;
         spi_receive(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+        // Wait for slave to prepare response
+        delay();
 
         // Send dummy byte so that data from slave's SPI data register is shifted into our SPI data register
         spi_send(SPI2, &dummy_byte, sizeof(dummy_byte));
@@ -308,6 +313,46 @@ void example_spi_arduino_cmd(void) {
             args[0] = ARDUINO_LED_PIN;
             args[1] = ARDUINO_CMD_LED_ON;
             spi_send(SPI2, args, sizeof(args));
+        }
+
+        // Button input
+        while (!gpio_read_input_pin(GPIOA, GPIO_PIN_NO_0));
+        delay();
+
+        // Send SENSOR READ command
+        cmd_code = ARDUINO_CMD_SENSOR_READ;
+        spi_send(SPI2, &cmd_code, sizeof(cmd_code));
+
+        // Read dummy byte to clear RXNE
+        dummy_byte = 0xFF;
+        spi_receive(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+        // Send dummy byte so that data from slave's SPI data register is shifted into our SPI data register
+        spi_send(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+        // Read the shifted data from the previous operation
+        ack_byte = 0xFF;
+        spi_receive(SPI2, &ack_byte, sizeof(ack_byte));
+
+        // Verify if we receive ACK or NACK
+        if (example_spi_arduino_cmd_verify_response(ack_byte)) {
+            // Send cmd arguments
+            args[0] = ARDUINO_ANALOG_PIN0;
+            spi_send(SPI2, args, 1);
+
+            // Read dummy byte to clear RXNE
+            dummy_byte = 0xFF;
+            spi_receive(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+            // Wait for slave to prepare response
+            delay();
+
+            // Send dummy byte so that data from slave's SPI data register is shifted into our SPI data register
+            spi_send(SPI2, &dummy_byte, sizeof(dummy_byte));
+
+            // Read response sensor data
+            uint8_t analog_byte = 0xFF;
+            spi_receive(SPI2, &analog_byte, sizeof(analog_byte));
         }
 
         // Ensure SPI communication is completed before disabling the peripheral
